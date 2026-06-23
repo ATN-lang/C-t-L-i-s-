@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: Remix: phường cát lái",
+  "description": "Cổng thông tin hoạt động trực tuyến của Liên đội THCS Nguyễn Thị Định - Ươm mầm tài năng, rèn luyện nhân cách.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

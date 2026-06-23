@@ -1,0 +1,434 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny everything
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Global Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && 
+        request.auth.token.get('email_verified', false) == true &&
+        (request.auth.token.get('email', '').lower() == 'anrompro@gmail.com' || request.auth.uid == '19O6W1NeYFPhMNWrYS2CCMKejOR2');
+    }
+
+    function getRole() {
+      return get(/databases/$(database)/documents/roles/$(request.auth.token.get('email', '').lower())).data;
+    }
+
+    function hasPermission(perm) {
+      let email = request.auth.token.get('email', '').lower();
+      return isSuperAdmin() 
+        || (isSignedIn() && email == 'jullynguyennn@gmail.com') 
+        || (isSignedIn() && 
+            exists(/databases/$(database)/documents/roles/$(email)) && 
+            getRole().permissions.get(perm, false) == true);
+    }
+
+    function isAdmin() {
+      let email = request.auth.token.get('email', '').lower();
+      return isSuperAdmin() 
+        || (isSignedIn() && email == 'jullynguyennn@gmail.com') 
+        || (isSignedIn() && 
+            exists(/databases/$(database)/documents/roles/$(email)) && 
+            getRole().get('isAdmin', false) == true);
+    }
+
+    function canManageNews() {
+      return hasPermission('canManageNews');
+    }
+
+    function canManageActivities() {
+      return hasPermission('canManageActivities');
+    }
+
+    function canManageSchedules() {
+      return hasPermission('canManageSchedules');
+    }
+
+    function canManageRegistrations() {
+      return hasPermission('canManageRegistrations');
+    }
+
+    function canManageAchievements() {
+      return hasPermission('canManageAchievements');
+    }
+
+    function canManageMembers() {
+      return hasPermission('canManageMembers');
+    }
+
+    function canManageMessages() {
+      return hasPermission('canManageMessages');
+    }
+
+    function canManageSettings() {
+      return hasPermission('canManageSettings');
+    }
+
+    function canManageUsers() {
+      return hasPermission('canManageUsers');
+    }
+
+    function canManageClubs() {
+      return hasPermission('canManageClubs');
+    }
+
+    function isValidSiteSettings(data) {
+      return data.keys().hasAll(['logoUrl', 'siteName', 'address', 'phone', 'email'])
+        && data.logoUrl is string && data.logoUrl.size() <= 2000000
+        && data.siteName is string && data.siteName.size() <= 1000
+        && data.address is string && data.address.size() <= 2000
+        && data.phone is string && data.phone.size() <= 100
+        && data.email is string && data.email.size() <= 500
+        && (data.get('autoApproveMembers', false) is bool)
+        && (data.get('maxClubsPerStudent', 3) is number)
+        && (data.get('updatedAt', request.time) is timestamp);
+    }
+
+    // --- Entity Validations ---
+    function isValidNews(data) {
+      return data.keys().hasAll(['title', 'category', 'content', 'authorId', 'createdAt'])
+        && data.keys().size() <= 20
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 2000
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 200
+        && data.content is string && data.content.size() >= 1 && data.content.size() <= 1000000
+        && (data.get('desc', '') is string && data.get('desc', '').size() <= 10000)
+        && (data.get('image', '') is string && data.get('image', '').size() <= 1000000)
+        && (data.get('images', []) is list)
+        && (data.get('videoUrl', '') is string)
+        && (data.get('featured', false) is bool)
+        && (data.authorId is string);
+    }
+
+    function isValidSchedule(data) {
+      return data.keys().hasAll(['title', 'date', 'time', 'location', 'createdAt'])
+        && data.title is string && data.title.size() <= 1000
+        && data.date is string && data.date.size() <= 128
+        && data.time is string && data.time.size() <= 128
+        && data.location is string && data.location.size() <= 2000
+        && (data.get('description', '') is string && data.get('description', '').size() <= 5000);
+    }
+
+    function isValidRegistration(data) {
+      return data.keys().hasAll(['activityId', 'activityTitle', 'userName', 'userClass', 'createdAt'])
+        && data.activityId is string && data.activityId.size() <= 128
+        && data.activityTitle is string && data.activityTitle.size() <= 1000
+        && data.userName is string && data.userName.size() <= 200
+        && data.userClass is string && data.userClass.size() <= 100
+        && (data.get('userRole', '') is string && data.get('userRole', '').size() <= 200)
+        && (data.get('phone', '') is string && data.get('phone', '').size() <= 50);
+    }
+
+    function isValidActivity(data) {
+      return data.keys().hasAll(['title', 'posterUrl', 'startDate', 'location', 'maxParticipants', 'createdAt'])
+        && data.title is string && data.title.size() <= 1000
+        && data.posterUrl is string && data.posterUrl.size() <= 1000000
+        && data.startDate is string && data.startDate.size() <= 128
+        && (data.get('startTime', '') is string && data.get('startTime', '').size() <= 128)
+        && (data.get('endDate', '') is string && data.get('endDate', '').size() <= 128)
+        && (data.get('endTime', '') is string && data.get('endTime', '').size() <= 128)
+        && data.location is string && data.location.size() <= 2000
+        && data.maxParticipants is number && data.maxParticipants >= 0
+        && (data.get('currentParticipants', 0) is number)
+        && (data.get('description', '') is string && data.get('description', '').size() <= 50000);
+    }
+
+    function isValidExemplaryMember(data) {
+      return data.keys().hasAll(['name', 'class', 'achievement', 'rank', 'createdAt'])
+        && data.name is string && data.name.size() <= 200
+        && data.class is string && data.class.size() <= 100
+        && (data.get('schoolYear', '') is string && data.get('schoolYear', '').size() <= 100)
+        && data.achievement is string && data.achievement.size() <= 5000
+        && data.rank is string && data.rank.size() <= 100
+        && (data.get('avatar', '') is string && data.get('avatar', '').size() <= 1000000);
+    }
+
+    function isValidExcellentClass(data) {
+      return data.keys().hasAll(['week', 'grade6', 'grade7', 'grade8', 'grade9', 'createdAt'])
+        && data.week is string && data.week.size() <= 200
+        && data.grade6 is string && data.grade6.size() <= 100
+        && data.grade7 is string && data.grade7.size() <= 100
+        && data.grade8 is string && data.grade8.size() <= 100
+        && data.grade9 is string && data.grade9.size() <= 100;
+    }
+
+    function isValidCollectiveAchievement(data) {
+      return data.keys().hasAll(['title', 'content', 'certificateImage', 'createdAt'])
+        && data.title is string && data.title.size() <= 1000
+        && data.content is string && data.content.size() <= 100000
+        && data.certificateImage is string && data.certificateImage.size() <= 1000000
+        && (data.get('gallery', []) is list)
+        && (data.get('date', '') is string && data.get('date', '').size() <= 500)
+        && (data.createdAt is timestamp)
+        && (data.get('updatedAt', request.time) is timestamp);
+    }
+
+    function isValidContactMessage(data) {
+      return data.keys().hasAll(['name', 'contact', 'subject', 'message', 'status', 'createdAt'])
+        && data.name is string && data.name.size() <= 200
+        && data.contact is string && data.contact.size() <= 200
+        && data.subject is string && data.subject.size() <= 200
+        && data.message is string && data.message.size() <= 5000
+        && data.status in ['unread', 'read', 'replied']
+        && (data.createdAt is timestamp);
+    }
+
+    function isValidClubMembership(data) {
+      return data.keys().hasAll(['clubId', 'clubName', 'userName', 'userClass', 'status', 'joinedAt', 'userId', 'userEmail'])
+        && data.clubId is string && data.clubId.size() <= 128
+        && data.clubName is string && data.clubName.size() <= 1000
+        && data.userName is string && data.userName.size() <= 200
+        && data.userClass is string && data.userClass.size() <= 100
+        && data.userId is string && data.userId.size() <= 128
+        && data.userEmail is string && data.userEmail.size() <= 200
+        && (data.get('rejectionReason', '') is string && data.get('rejectionReason', '').size() <= 5000)
+        && (data.get('updatedAt', request.time) is timestamp)
+        && data.status in ['pending', 'approved', 'rejected'];
+    }
+
+    function isValidClub(data) {
+      return data.keys().hasAll(['name', 'leaderName', 'posterUrl', 'createdAt'])
+        && data.name is string && data.name.size() <= 1000
+        && data.leaderName is string && data.leaderName.size() <= 200
+        && data.posterUrl is string && data.posterUrl.size() <= 1000000
+        && (data.get('description', '') is string && data.get('description', '').size() <= 50000)
+        && (data.get('schedule', '') is string && data.get('schedule', '').size() <= 2000)
+        && (data.get('memberCount', 0) is number)
+        && (data.createdAt is timestamp);
+    }
+
+    function isValidScoutStats(data) {
+      return data.keys().hasAll(['className', 'maleCount', 'femaleCount'])
+        && data.className is string && data.className.size() <= 100
+        && data.maleCount is number
+        && data.femaleCount is number;
+    }
+
+    function isValidGift(data) {
+      return data.keys().hasAll(['title', 'description', 'starsRequired', 'quantity', 'createdAt'])
+        && data.title is string && data.title.size() <= 1000
+        && data.description is string && data.description.size() <= 50000
+        && data.starsRequired is number && data.starsRequired >= 0
+        && data.quantity is number && data.quantity >= 0
+        && (data.get('imageUrl', '') is string && data.get('imageUrl', '').size() <= 1000000)
+        && (data.createdAt is timestamp);
+    }
+
+    function isValidUserStars(data) {
+      return data.keys().hasAll(['userId', 'userEmail', 'userName', 'stars', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128
+        && data.userEmail is string && data.userEmail.size() <= 200
+        && data.userName is string && data.userName.size() <= 200
+        && data.stars is number
+        && (data.updatedAt is timestamp);
+    }
+
+    function isValidStarTransaction(data) {
+      return data.keys().hasAll(['userId', 'userEmail', 'userName', 'amount', 'type', 'description', 'createdAt'])
+        && data.userId is string && data.userId.size() <= 128
+        && data.userEmail is string && data.userEmail.size() <= 200
+        && data.userName is string && data.userName.size() <= 200
+        && data.amount is number
+        && data.type in ['award', 'redeem']
+        && data.description is string && data.description.size() <= 5000
+        && (data.createdAt is timestamp);
+    }
+
+    function isValidRedemption(data) {
+      return data.keys().hasAll(['userId', 'userEmail', 'userName', 'giftId', 'giftTitle', 'starsSpent', 'status', 'createdAt'])
+        && data.userId is string && data.userId.size() <= 128
+        && data.userEmail is string && data.userEmail.size() <= 200
+        && data.userName is string && data.userName.size() <= 200
+        && data.giftId is string && data.giftId.size() <= 128
+        && data.giftTitle is string && data.giftTitle.size() <= 1000
+        && data.starsSpent is number && data.starsSpent >= 0
+        && data.status in ['pending', 'completed', 'canceled']
+        && (data.createdAt is timestamp)
+        && (data.get('updatedAt', request.time) is timestamp);
+    }
+
+    // --- Collection Routes ---
+    match /roles/{email} {
+      allow read: if true;
+      allow write: if isSuperAdmin() || canManageUsers();
+    }
+
+    match /news/{newsId} {
+      allow read: if true;
+
+      allow create: if canManageNews() 
+        && isValidNews(incoming())
+        && incoming().createdAt == request.time;
+
+      allow update: if 
+        (canManageNews() && isValidNews(incoming()))
+        || (canManageNews() && incoming().diff(existing()).affectedKeys().hasOnly(['featured', 'updatedAt', 'category', 'content', 'title', 'desc', 'image', 'images', 'videoUrl']))
+        || (incoming().diff(existing()).affectedKeys().hasOnly(['views']) && incoming().views == existing().get('views', 0) + 1);
+
+      allow delete: if canManageNews();
+    }
+
+    match /activities/{activityId} {
+      allow read: if true;
+      allow create: if canManageActivities() && isValidActivity(incoming());
+      allow update: if canManageActivities()
+        || (incoming().diff(existing()).affectedKeys().hasOnly(['currentParticipants', 'updatedAt']) 
+            && incoming().currentParticipants == existing().get('currentParticipants', 0) + 1
+            && incoming().currentParticipants <= existing().maxParticipants);
+      allow delete: if canManageActivities();
+    }
+
+    match /schedules/{scheduleId} {
+      allow read: if true;
+      allow create: if canManageSchedules() && isValidSchedule(incoming());
+      allow update: if canManageSchedules() && isValidSchedule(incoming());
+      allow delete: if canManageSchedules();
+    }
+
+    match /registrations/{regId} {
+      allow read: if request.time != null;
+      allow create: if isValidRegistration(incoming())
+        && existsAfter(/databases/$(database)/documents/activities/$(incoming().activityId));
+      allow delete: if true;
+    }
+
+    match /exemplary_members/{memberId} {
+      allow read: if true;
+      allow create: if canManageAchievements() && isValidExemplaryMember(incoming());
+      allow update: if canManageAchievements() && (
+        isValidExemplaryMember(incoming()) || 
+        (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'class', 'schoolYear', 'achievement', 'rank', 'avatar', 'updatedAt']))
+      );
+      allow delete: if canManageAchievements();
+    }
+
+    match /excellent_classes/{classId} {
+      allow read: if true;
+      allow create: if canManageAchievements() && isValidExcellentClass(incoming());
+      allow update: if canManageAchievements() && (
+        isValidExcellentClass(incoming()) || 
+        (incoming().diff(existing()).affectedKeys().hasOnly(['week', 'grade6', 'grade7', 'grade8', 'grade9', 'updatedAt']))
+      );
+      allow delete: if canManageAchievements();
+    }
+    
+    match /collective_achievements/{achievementId} {
+      allow read: if true;
+      allow create: if canManageAchievements() && isValidCollectiveAchievement(incoming());
+      allow update: if canManageAchievements() && (
+        isValidCollectiveAchievement(incoming()) ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'certificateImage', 'gallery', 'date', 'updatedAt'])
+      );
+      allow delete: if canManageAchievements();
+    }
+
+    match /achievement_stats/{docId} {
+      allow read: if true;
+      allow write: if canManageAchievements();
+    }
+
+    match /site_settings/{docId} {
+      allow read: if true;
+      allow create, update: if canManageSettings() && isValidSiteSettings(incoming());
+      allow delete: if canManageSettings();
+    }
+
+    match /contact_messages/{msgId} {
+      allow read: if request.time != null;
+      allow create: if isValidContactMessage(incoming());
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    match /admin_config/{docId} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    match /school_classes/{classId} {
+      allow read: if true;
+      allow write: if canManageMembers();
+    }
+
+    match /scout_stats/{classId} {
+      allow read: if true;
+      allow create: if canManageMembers() && isValidScoutStats(incoming()) && incoming().createdAt == request.time;
+      allow update: if canManageMembers() && (
+        isValidScoutStats(incoming()) || 
+        incoming().diff(existing()).affectedKeys().hasOnly(['className', 'maleCount', 'femaleCount', 'updatedAt'])
+      );
+      allow delete: if canManageMembers();
+    }
+
+    match /clubs/{clubId} {
+      allow read: if true;
+      allow create: if (canManageClubs() || isAdmin()) && (isValidClub(incoming()) || isSuperAdmin());
+      allow update: if (canManageClubs() || isAdmin()) && (isValidClub(incoming()) || incoming().diff(existing()).affectedKeys().hasOnly(['memberCount', 'updatedAt']) || isSuperAdmin());
+      allow delete: if canManageClubs() || isAdmin();
+    }
+
+    match /club_memberships/{membershipId} {
+      allow read: if true;
+      allow create: if isValidClubMembership(incoming())
+        && (
+          (incoming().status == 'pending') ||
+          (incoming().status == 'approved' && get(/databases/$(database)/documents/site_settings/global).data.get('autoApproveMembers', false) == true)
+        )
+        && incoming().joinedAt == request.time
+        && exists(/databases/$(database)/documents/clubs/$(incoming().clubId));
+    allow update: if canManageMembers() || canManageClubs() || isAdmin();
+      allow delete: if canManageClubs() || canManageMembers() || isAdmin();
+    }
+
+    match /gifts/{giftId} {
+      allow read: if true;
+      allow create, update: if isAdmin() || hasPermission('canManageSettings');
+      allow delete: if isAdmin() || hasPermission('canManageSettings');
+    }
+
+    match /user_stars/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() || (isSignedIn() && request.auth.uid == userId && incoming().stars == 0);
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId && incoming().stars < existing().stars && incoming().diff(existing()).affectedKeys().hasOnly(['stars', 'updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    match /star_transactions/{transactionId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() || (isSignedIn() && request.auth.uid == incoming().userId && incoming().amount < 0 && incoming().type == 'redeem' && isValidStarTransaction(incoming()));
+      allow update, delete: if isAdmin();
+    }
+
+    match /redemptions/{redemptionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == incoming().userId && incoming().status == 'pending' && isValidRedemption(incoming());
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == existing().userId && incoming().status == 'canceled' && existing().status == 'pending' && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    match /stats/{statId} {
+      allow read: if true;
+      allow update: if statId == 'global' 
+        && incoming().diff(existing()).affectedKeys().hasOnly(['totalVisits'])
+        && incoming().totalVisits == existing().get('totalVisits', 0) + 1;
+      allow create: if statId == 'global' && isAdmin();
+    }
+  }
+}

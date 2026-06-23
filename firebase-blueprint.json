@@ -1,0 +1,321 @@
+{
+  "entities": {
+    "clubs": {
+      "title": "Club",
+      "description": "Represents a student club in the school",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the club" },
+        "description": { "type": "string", "description": "Detailed description of the club" },
+        "leaderName": { "type": "string", "description": "Name of the club leader" },
+        "posterUrl": { "type": "string", "format": "uri", "description": "URL to the club's cover image" },
+        "memberCount": { "type": "integer", "description": "Total number of approved members" },
+        "foundedDate": { "type": "string", "format": "date", "description": "The date the club was founded" },
+        "schedule": { "type": "string", "description": "The regular meeting schedule" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "leaderName", "posterUrl"]
+    },
+    "club_memberships": {
+      "title": "Club Membership",
+      "description": "A record of a student's membership or application to a club",
+      "type": "object",
+      "properties": {
+        "clubId": { "type": "string", "description": "ID of the club" },
+        "clubName": { "type": "string", "description": "Cached name of the club" },
+        "userId": { "type": "string", "description": "Firebase Auth UID of the student" },
+        "userEmail": { "type": "string", "description": "Email of the student" },
+        "userName": { "type": "string", "description": "Name of the student" },
+        "userClass": { "type": "string", "description": "Class of the student (e.g., 6A1)" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "The status of the membership" },
+        "rejectionReason": { "type": "string", "description": "Optional reason for rejection if status is rejected" },
+        "joinedAt": { "type": "string", "format": "date-time", "description": "When the student applied" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clubId", "userId", "status", "joinedAt"]
+    },
+    "news": {
+      "title": "News Post",
+      "description": "A news article or post published on the site",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "content": { "type": "string" },
+        "image": { "type": "string", "format": "uri" },
+        "authorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "content", "authorId"]
+    },
+    "scout_stats": {
+      "title": "Class Scout Stats (Thống kê Đội viên)",
+      "description": "Summary of scout counts per class",
+      "type": "object",
+      "properties": {
+        "className": { "type": "string" },
+        "maleCount": { "type": "integer" },
+        "femaleCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["className", "maleCount", "femaleCount"]
+    },
+    "activities": {
+      "title": "Activity",
+      "description": "School activities and movements",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "posterUrl": { "type": "string", "format": "uri" },
+        "startDate": { "type": "string", "format": "date" },
+        "startTime": { "type": "string", "description": "Starting time of the activity (e.g., 08:00)" },
+        "endDate": { "type": "string", "format": "date" },
+        "endTime": { "type": "string", "description": "Ending time of the activity (e.g., 17:00)" },
+        "location": { "type": "string" },
+        "maxParticipants": { "type": "integer" },
+        "currentParticipants": { "type": "integer" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "posterUrl", "startDate", "location", "maxParticipants"]
+    },
+    "registrations": {
+      "title": "Registration",
+      "description": "Activity registration records",
+      "type": "object",
+      "properties": {
+        "activityId": { "type": "string" },
+        "activityTitle": { "type": "string" },
+        "userName": { "type": "string" },
+        "userClass": { "type": "string" },
+        "userRole": { "type": "string" },
+        "phone": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["activityId", "userName", "userClass"]
+    },
+    "schedules": {
+      "title": "Schedule",
+      "description": "Weekly activity schedules",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "location": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "date", "time", "location"]
+    },
+    "exemplary_members": {
+      "title": "Exemplary Member",
+      "description": "Students with outstanding achievements",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "class": { "type": "string" },
+        "avatar": { "type": "string", "format": "uri" },
+        "achievement": { "type": "string" },
+        "rank": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "class", "achievement", "rank"]
+    },
+    "excellent_classes": {
+        "title": "Excellent Class",
+        "description": "Top performing classes per week",
+        "type": "object",
+        "properties": {
+          "week": { "type": "string" },
+          "grade6": { "type": "string" },
+          "grade7": { "type": "string" },
+          "grade8": { "type": "string" },
+          "grade9": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["week", "grade6", "grade7", "grade8", "grade9"]
+    },
+    "collective_achievements": {
+        "title": "Collective Achievement",
+        "description": "Awards and achievements for groups or the school",
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "content": { "type": "string" },
+          "certificateImage": { "type": "string", "format": "uri" },
+          "gallery": { "type": "array", "items": { "type": "string", "format": "uri" } },
+          "date": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["title", "content", "certificateImage"]
+    },
+    "stats": {
+        "title": "Statistic",
+        "description": "Global application statistics",
+        "type": "object",
+        "properties": {
+            "totalVisits": { "type": "integer" }
+        }
+    },
+    "achievement_stats": {
+        "title": "Achievement Statistics",
+        "description": "Aggregation of achievement counts",
+        "type": "object",
+        "properties": {
+            "collectiveCount": { "type": "integer" },
+            "exemplaryCount": { "type": "integer" },
+            "totalAwards": { "type": "integer" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+        }
+    },
+    "site_settings": {
+      "title": "Site Settings",
+      "description": "Global website configuration",
+      "type": "object",
+      "properties": {
+        "logoUrl": { "type": "string", "format": "uri" },
+        "siteName": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "autoApproveMembers": { "type": "boolean" },
+        "maxClubsPerStudent": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "gifts": {
+      "title": "Gift",
+      "description": "Represents an item in the rewards store that can be redeemed for stars",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The name of the gift" },
+        "description": { "type": "string", "description": "Details about the gift" },
+        "starsRequired": { "type": "integer", "description": "Number of stars needed for redemption" },
+        "quantity": { "type": "integer", "description": "Quantity in stock" },
+        "imageUrl": { "type": "string", "format": "uri", "description": "The image of the gift" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "starsRequired", "quantity"]
+    },
+    "user_stars": {
+      "title": "User Stars",
+      "description": "The star balance of a student",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase standard auth ID of the student" },
+        "userEmail": { "type": "string", "description": "The email of the student" },
+        "userName": { "type": "string", "description": "The full name of the student" },
+        "stars": { "type": "integer", "description": "Current stars balance" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userEmail", "userName", "stars"]
+    },
+    "star_transactions": {
+      "title": "Star Transaction",
+      "description": "Log of additions or redemptions of stars",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Recipient user ID" },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "amount": { "type": "integer", "description": "Amount of stars. Negative for spend, positive for earn" },
+        "type": { "type": "string", "enum": ["award", "redeem"], "description": "The transaction type" },
+        "description": { "type": "string", "description": "Context about the star increase or deduction" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "type", "description", "createdAt"]
+    },
+    "redemptions": {
+      "title": "Redemption Request",
+      "description": "A record of a student redeeming stars for a gift in the store",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "giftId": { "type": "string" },
+        "giftTitle": { "type": "string" },
+        "starsSpent": { "type": "integer" },
+        "status": { "type": "string", "enum": ["pending", "completed", "canceled"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "giftId", "giftTitle", "starsSpent", "status"]
+    }
+  },
+  "firestore": {
+    "/gifts/{giftId}": {
+      "schema": "gifts",
+      "description": "Store items available for redemption"
+    },
+    "/user_stars/{userId}": {
+      "schema": "user_stars",
+      "description": "Balances of registered students"
+    },
+    "/star_transactions/{transactionId}": {
+      "schema": "star_transactions",
+      "description": "History of star changes"
+    },
+    "/redemptions/{redemptionId}": {
+      "schema": "redemptions",
+      "description": "Redemption request processes"
+    },
+    "/site_settings/{docId}": {
+      "schema": "site_settings",
+      "description": "Website global configuration"
+    },
+    "/scout_stats/{classId}": {
+      "schema": "scout_stats",
+      "description": "Scout statistics per class"
+    },
+    "/clubs/{clubId}": {
+      "schema": "clubs",
+      "description": "List of school clubs"
+    },
+    "/club_memberships/{membershipId}": {
+      "schema": "club_memberships",
+      "description": "Applications and memberships for clubs"
+    },
+    "/news/{newsId}": {
+      "schema": "news",
+      "description": "News and blog posts"
+    },
+    "/activities/{activityId}": {
+      "schema": "activities",
+      "description": "School activities and movements"
+    },
+    "/registrations/{regId}": {
+      "schema": "registrations",
+      "description": "Activity registration records"
+    },
+    "/schedules/{scheduleId}": {
+      "schema": "schedules",
+      "description": "Weekly activity schedules"
+    },
+    "/exemplary_members/{memberId}": {
+      "schema": "exemplary_members",
+      "description": "Exemplary members"
+    },
+    "/excellent_classes/{classId}": {
+      "schema": "excellent_classes",
+      "description": "Weekly excellent classes"
+    },
+    "/collective_achievements/{achievementId}": {
+      "schema": "collective_achievements",
+      "description": "Collective awards"
+    },
+    "/stats/{statId}": {
+      "schema": "stats",
+      "description": "Global usage stats"
+    },
+    "/achievement_stats/{statId}": {
+      "schema": "achievement_stats",
+      "description": "Counter summaries"
+    }
+  }
+}
+
